@@ -15,6 +15,7 @@ const COMBINATION_LEN = 3;      // 3 pairs ⇒ 6 clicks/steps
 const OFFSET = {
   door:         { x: 80,  y: -10   },
   doorOpen:     { x: 80,  y: -10   },
+  blink:        { x: 0,  y:  10   },
   doorShadow:   { x: 110, y: -10   },
   handle:       { x: 0,y: -10   },
   handleShadow: { x: 20,y: 40  },
@@ -42,6 +43,7 @@ class VaultGame {
   private doorOpenShadow!: Sprite;
   private handle!: ButtonSprite;
   private handleShadow!: Sprite;
+  private blink!: Sprite;
 
   constructor() {
     this.init();
@@ -60,10 +62,11 @@ class VaultGame {
     await Assets.load([
       "assets/bg.png",
       "assets/door.png",
-      "assets/doorOpen.png",
       "assets/doorOpenShadow.png",
+      "assets/doorOpen.png",
       "assets/handle.png",
       "assets/handleShadow.png",
+      "assets/blink.png",
     ]);
 
     this.stage = new Container();
@@ -89,18 +92,25 @@ class VaultGame {
     this.door.anchor.set(0.5);
     this.stage.addChild(this.door);
 
-    // OPEN DOOR
-    this.doorOpen = Sprite.from("assets/doorOpen.png");
-    this.doorOpen.anchor.set(0.5);
-    this.doorOpen.visible = false;
-    this.stage.addChild(this.doorOpen);
-
+    
     // DOOR SHADOW
     this.doorOpenShadow = Sprite.from("assets/doorOpenShadow.png");
     this.doorOpenShadow.anchor.set(0.5);
     this.doorOpenShadow.visible = false;
     this.stage.addChild(this.doorOpenShadow);
-
+    
+    // OPEN DOOR
+    this.doorOpen = Sprite.from("assets/doorOpen.png");
+    this.doorOpen.anchor.set(0.5);
+    this.doorOpen.visible = false;
+    this.stage.addChild(this.doorOpen);
+    
+    // BLINK
+    this.blink = Sprite.from("assets/blink.png");
+    this.blink.anchor.set(0.5);
+    this.blink.visible = false;
+    this.stage.addChild(this.blink);
+    
     // HANDLE SHADOW
     this.handleShadow = Sprite.from("assets/handleShadow.png");
     this.handleShadow.anchor.set(0.5);
@@ -130,6 +140,7 @@ class VaultGame {
       { s: this.bg,         off: { x: 0,  y: 0   } },
       { s: this.door,       off: OFFSET.door       },
       { s: this.doorOpen,   off: OFFSET.doorOpen   },
+      { s: this.blink,   off: OFFSET.blink   },
       { s: this.doorOpenShadow, off: OFFSET.doorShadow },
       { s: this.handle,     off: OFFSET.handle     },
       { s: this.handleShadow, off: OFFSET.handleShadow },
@@ -151,7 +162,7 @@ class VaultGame {
 
   private generateSecret() {
     this.secret = Array.from({ length: COMBINATION_LEN }, () => ({
-      steps: 1 + Math.floor(Math.random() * 9),          // 1-9 clicks
+      steps: 1 + Math.floor(Math.random() * 3),          // 1-3 clicks
       dir: Math.random() > 0.5 ? 1 : -1,                 // 1 = cw, -1 = ccw
     }));
     console.log(
@@ -200,9 +211,40 @@ class VaultGame {
 
   private async success() {
     this.state = GameState.OPENING;
+    this.blink.visible = true;
+    this.blink.alpha   = 0;
+
+    
     await this.openVault();
-    await this.playGlitter();
-    await this.delay(5);         // vault stays open 5 s
+    // pulse *both* doorOpen + shadow at once
+    await this.delay(5);
+    await Promise.all([
+     new Promise(resolve => {
+      gsap.fromTo(
+        [ this.doorOpen, this.doorOpenShadow ],
+        { alpha: 1 },
+        { alpha: 1, yoyo: true, repeat: 0, duration: 0.25, onComplete: resolve }
+      );
+    }),
+        // treasure blink
+      (async () => {
+        this.blink.visible = true;
+        await new Promise<void>(r => gsap.fromTo(
+          this.blink,
+          { alpha: 0 },
+          {
+            alpha: 1,
+            yoyo: true,
+            repeat: 8,
+            duration: 0.5,
+            onComplete: () => {
+              this.blink.visible = false;
+              r();
+            }
+          }
+        ));
+      })()
+    ]);
     await this.reset(true);
   }
 
@@ -221,24 +263,15 @@ class VaultGame {
     this.doorOpen.visible = this.doorOpenShadow.visible = true;
     this.handle.visible = this.handleShadow.visible = false;
 
-    const targetX = this.door.x + 200;
+    const targetX = this.door.x + 300;
     const targetShadowX = targetX + 50;
 
     return new Promise(resolve => {
       gsap.timeline({ onComplete: resolve })
-        .to(this.doorOpen, { x: targetX, duration: 1, ease: "power2.out" })
-        .to(this.doorOpenShadow, { x: targetShadowX, duration: 1 }, "<");
-    });
-  }
-
-  private playGlitter(): Promise<void> {
-    // placeholder: simple pulse. Replace with particles if desired
-    return new Promise(resolve => {
-      gsap.fromTo(
-        this.doorOpen,
-        { scale: 1 },
-        { scale: 1.05, yoyo: true, repeat: 3, duration: 0.2, onComplete: resolve }
-      );
+        .to(
+          [this.doorOpenShadow, this.doorOpen],
+          { x: (i) => i===0 ? targetShadowX : targetX, duration: 1, ease: "power2.out" }
+        );
     });
   }
 
@@ -248,7 +281,8 @@ class VaultGame {
 
     // graphics
     this.door.visible = true;
-    this.doorOpen.visible = this.doorOpenShadow.visible = false;
+    this.doorOpen.visible =  false;
+    this.doorOpenShadow.visible = false;
     this.handle.visible = this.handleShadow.visible = true;
     this.handle.rotation = this.handleShadow.rotation = 0;
 
