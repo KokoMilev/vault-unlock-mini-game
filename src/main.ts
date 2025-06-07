@@ -12,7 +12,13 @@ enum GameState {
 
 const STEP_ANGLE = Math.PI / 3; // 60°
 const COMBINATION_LEN = 3;      // 3 pairs ⇒ 6 clicks/steps
-
+const OFFSET = {
+  door:         { x: 80,  y: -10   },
+  doorOpen:     { x: 80,  y: -10   },
+  doorShadow:   { x: 110, y: -10   },
+  handle:       { x: 0,y: -10   },
+  handleShadow: { x: 20,y: 40  },
+};
 
 class VaultGame {
   // runtime and state
@@ -73,77 +79,74 @@ class VaultGame {
   }
 
   private setupScene() {
-    // Background
+    // BACKGROUND
     this.bg = Sprite.from("assets/bg.png");
-    this.bg.anchor.set(0);
+    this.bg.anchor.set(0.5);
     this.stage.addChild(this.bg);
 
-    // Closed door
+    // CLOSED DOOR
     this.door = Sprite.from("assets/door.png");
     this.door.anchor.set(0.5);
     this.stage.addChild(this.door);
 
-    // Open door
+    // OPEN DOOR
     this.doorOpen = Sprite.from("assets/doorOpen.png");
     this.doorOpen.anchor.set(0.5);
     this.doorOpen.visible = false;
     this.stage.addChild(this.doorOpen);
 
-    // Door shadow
+    // DOOR SHADOW
     this.doorOpenShadow = Sprite.from("assets/doorOpenShadow.png");
     this.doorOpenShadow.anchor.set(0.5);
     this.doorOpenShadow.visible = false;
     this.stage.addChild(this.doorOpenShadow);
 
-    // Handle shadow
+    // HANDLE SHADOW
     this.handleShadow = Sprite.from("assets/handleShadow.png");
     this.handleShadow.anchor.set(0.5);
     this.stage.addChild(this.handleShadow);
 
-    // Handle
+    // HANDLE
     this.handle = Sprite.from("assets/handle.png") as ButtonSprite;
     this.handle.anchor.set(0.5);
     this.handle.interactive = true;
     this.handle.buttonMode = true;
-    this.stage.addChild(this.handle);
-
     this.handle.on("pointerdown", this.handleInput);
-    
-    // // Click = rotate + open
-    // this.handle.on("pointerdown", () => {
-    //   gsap.to([this.handle, this.handleShadow], {
-    //     rotation: this.handle.rotation + Math.PI / 3,
-    //     duration: 0.25,
-    //     onComplete: () => {
-    //       this.openVault();
-    //     },
-    //   });
-    // });
+    this.stage.addChild(this.handle);
   }
 
   private resize() {
-    const { width, height } = this.app.screen;
+    const w = this.app.screen.width;
+    const h = this.app.screen.height;
 
-    // Background full screen
-    this.bg.width = width;
-    this.bg.height = height;
+    // compute the same "cover & crop" scale as BG
+    const { orig } = this.bg.texture;
+    const coverScale = Math.max(w / orig.width, h / orig.height);
+    const cx = w / 2;
+    const cy = h / 2;
 
-    // Vault position
-    const vaultX = width * 0.5;
-    const vaultY = height * 0.48;
+    // list all sprites you want to behave like the BG
+    const all = [
+      { s: this.bg,         off: { x: 0,  y: 0   } },
+      { s: this.door,       off: OFFSET.door       },
+      { s: this.doorOpen,   off: OFFSET.doorOpen   },
+      { s: this.doorOpenShadow, off: OFFSET.doorShadow },
+      { s: this.handle,     off: OFFSET.handle     },
+      { s: this.handleShadow, off: OFFSET.handleShadow },
+      // if you want the timer to scale too, add here
+    ];
 
-    // Door positions
-    this.door.position.set(vaultX, vaultY);
-    this.doorOpen.position.set(vaultX, vaultY);
-    this.doorOpenShadow.position.set(this.doorOpen.position.x + 30, vaultY);
-
-    // Handle + shadow
-    this.handle.position.set(vaultX - 80, vaultY);
-    this.handleShadow.position.set(this.handle.position.x + 20, this.handle.position.y + 50);
-
-    // timer
-    if (this.timerTxt) this.timerTxt.position.set(width - 80, 60);
+    // apply same scale+center to each, then add your offsets
+    all.forEach(({ s, off }) => {
+      s.scale.set(coverScale);
+      s.position.set(
+        cx + off.x * coverScale,
+        cy + off.y * coverScale
+      );
+    });
   }
+
+
     /* ─────────────────────────────────  GAME LOGIC  ───────────────────────────────── */
 
   private generateSecret() {
@@ -269,7 +272,8 @@ class VaultGame {
         fontSize: 32,
       },
     });
-    this.timerTxt.anchor.set(0.5);
+    this.timerTxt.anchor.set(0, 0);
+    this.timerTxt.position.set(20, 20);
     this.stage.addChild(this.timerTxt);
     this.resetTimer();
 
