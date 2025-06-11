@@ -4,6 +4,7 @@ import { AssetManager } from "./AssetManager";
 import { VaultDoor } from "./VaultDoor";
 import { VaultHandle } from "./VaultHandle";
 import { CombinationManager } from "./CombinationManager";
+import gsap from "gsap";
 
 export class VaultGame {
   // runtime and state
@@ -66,7 +67,6 @@ export class VaultGame {
     // Keep the window resize listener as a fallback
     window.addEventListener("resize", () => this.resize());
 
-    this.combinationManager.generateSecret();
     this.state = GameState.INPUT;
   }
 
@@ -107,8 +107,12 @@ export class VaultGame {
     this.state = GameState.OPENING;
     this.handle.container.visible = false;
     await this.door.open();
-    await this.delay(5);
+    // Remove or reduce this delay
+    await this.delay(0.3); // Reduced from 5 seconds to 0.3 seconds
     await this.door.showTreasure();
+    
+    // Make sure handle is visible before reset
+    this.handle.container.visible = true;
     await this.reset(true);
   }
 
@@ -125,6 +129,9 @@ export class VaultGame {
     this.door.reset();
     this.handle.reset();
     this.combinationManager.reset();
+    
+    // Restore handle visibility
+    this.handle.container.visible = true;
     
     this.resetTimer();
     this.state = GameState.INPUT;
@@ -155,10 +162,20 @@ export class VaultGame {
     this.timeStart = performance.now();
   }
 
-  private delay(seconds: number) {
-    return new Promise<void>(resolve => setTimeout(resolve, seconds * 1000));
+  private delay(seconds: number): Promise<void> {
+    // Use GSAP's delayedCall instead of setTimeout
+    return new Promise<void>((resolve) => {
+      gsap.delayedCall(seconds, resolve);
+    });
   }
 }
+
+
+
+
+
+
+
 
 
 

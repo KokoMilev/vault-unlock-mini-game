@@ -79,7 +79,7 @@ export class VaultDoor {
         alpha: 1,
         yoyo: true,
         repeat: 8,
-        duration: 0.5,
+        duration: 0.6,
         onComplete: () => {
         this.blink.visible = false;
         resolve();

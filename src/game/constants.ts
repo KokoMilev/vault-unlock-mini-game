@@ -6,6 +6,6 @@ export const OFFSET = {
   doorOpen:     { x: 80,  y: -10   },
   blink:        { x: 0,  y:  10   },
   doorShadow:   { x: 110, y: -10   },
-  handle:       { x: 0,y: -10   },
-  handleShadow: { x: 20,y: 40  },
+  handle:       { x: 0, y: -10   },
+  handleShadow: { x: 20, y: 40  },
 };

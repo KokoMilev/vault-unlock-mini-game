@@ -162,6 +162,9 @@ export class VaultHandle {
     this.handleShadow.visible = true;
     this.handle.rotation = 0;
     this.handleShadow.rotation = 0;
+    
+    // Ensure container is visible too
+    this.container.visible = true;
   }
   
   private showDirectionHint = (e: FederatedPointerEvent) => {
@@ -184,5 +187,6 @@ export class VaultHandle {
     this.rightArrow.visible = false;
   };
 }
+
 
 
