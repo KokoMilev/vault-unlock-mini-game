@@ -18,8 +18,8 @@ A simple interactive vault-opening game built with Pixi.js and GSAP.
 
 ```bash
 # Clone the repo
-git clone <https://github.com/KokoMilev/vault-unlock-mini-game.git>
-cd pixi-project
+git clone "https://github.com/KokoMilev/vault-unlock-mini-game.git"
+cd vault-unlock-mini-game
 
 # Install dependencies
 npm install
