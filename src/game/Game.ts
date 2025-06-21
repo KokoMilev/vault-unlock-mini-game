@@ -77,9 +77,7 @@ export class Game {
     this.stage.position.set(w / 2, h / 2);
 
     if (this.timer) {
-      // We need to adjust timer position based on the stage's new scale
-      const newPos = this.app.stage.toLocal({x: 20, y: 20});
-      this.timer.setPosition(newPos.x, newPos.y);
+      this.timer.setPosition(20, 20);
     }
 
     this.app.render();
@@ -127,14 +125,4 @@ export class Game {
     this.timer.start();
     this.state = GameState.INPUT;
   }
-}
-
-
-
-
-
-
-
-
-
-
+} 

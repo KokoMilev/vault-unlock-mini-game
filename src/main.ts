@@ -1,4 +1,4 @@
-import { VaultGame } from "./game/VaultGame";
+import { Game } from "./game/Game";
 
 // Initialize the game
-new VaultGame();
+new Game();
